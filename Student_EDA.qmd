@@ -1,0 +1,14 @@
+---
+title: "Student Data EDA"
+author: "Caroline Hutchings"
+format: html
+editor: visual
+---
+
+## Import Dataset
+
+```{r}
+library(tidyverse)
+student_risk <- read_csv("student_dropout_risk_2026.csv")
+is.tibble(student_risk)
+```
