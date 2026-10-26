@@ -12,3 +12,14 @@ library(tidyverse)
 student_risk <- read_csv("student_dropout_risk_2026.csv")
 is.tibble(student_risk)
 ```
+
+## EDA
+
+```{r}
+View(student_risk)
+student_risk |> 
+  summarize(
+    across(
+      where(is.numeric), mean, na.rm=TRUE)
+  )
+```
