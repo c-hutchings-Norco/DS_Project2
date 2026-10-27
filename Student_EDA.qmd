@@ -113,7 +113,8 @@ ggplot(student_risk,
   labs(
     title = "Proportion of Gender Within Nationalities",
     y = "Proportion",
-    x = "Nationality"
+    x = "Nationality",
+    fill= "Gender"
   ) +
   theme_minimal()+
   theme(
@@ -132,7 +133,8 @@ ggplot(student_risk,
   labs(
     title = "Scholarship Status by Income and Gender",
     x = "Family Income Level",
-    y = "Proportion"
+    y = "Proportion",
+    fill = "Scholarship Status"
   ) +
   theme_minimal()+
   theme(
@@ -150,7 +152,8 @@ ggplot(student_risk,
   labs(
     title = "Dropout Rate by Course Type",
     x = "Course Type",
-    y = "Count"
+    y = "Count",
+    fill = 'Dropout Status'
   ) +
   theme_minimal() +
   theme(
@@ -168,7 +171,8 @@ ggplot(student_risk,
   labs(
     title = "Dropout Rate by Course Type",
     x = "Course Type",
-    y = "Proportion"
+    y = "Proportion", 
+    fill = 'Dropout Status'
   ) +
   theme_minimal() +
   theme(
@@ -218,6 +222,7 @@ student_risk |>
 Find the mean, standard deviation, median, minimum and maximum values for each numerical variable.
 
 ```{r}
+#Create numerical summaries for all numerical variables except person_id and format in a table
 table_student_risk <- student_risk |> 
   select(-person_id) |> 
   summarize(across(where(is.numeric),
@@ -233,7 +238,156 @@ table_student_risk <- student_risk |>
     names_sep = "_(?=[^_]+$)"
   )
 
-table_student_risk
+
+#create summaries of weekly work hours by family income
+table_work_hours <- student_risk |>
+  group_by(family_income_level) |>
+  summarize(
+    across(
+      weekly_work_hours,
+      list(
+        Mean   = \(x) mean(x, na.rm = TRUE),
+        SD     = \(x) sd(x, na.rm = TRUE),
+        Median = \(x) median(x, na.rm = TRUE),
+        Min    = \(x) min(x, na.rm = TRUE),
+        Max    = \(x) max(x, na.rm = TRUE)
+      ),
+      .names = "{.col}_{.fn}"
+    ),
+   .groups = "drop"
+  ) |>
+  pivot_longer(
+    cols = starts_with("weekly_work_hours"),
+    names_to = c("Variable", "Statistic"),
+    names_sep = "_(?=[^_]+$)"
+  )
+
+table_work_hours
+
+
+#create summaries of attendance rate by dropout status
+table_attendance <- student_risk |>
+  group_by(dropout) |>
+  summarize(
+    across(
+      attendance_rate,
+      list(
+        Mean   = \(x) mean(x, na.rm = TRUE),
+        SD     = \(x) sd(x, na.rm = TRUE),
+        Median = \(x) median(x, na.rm = TRUE),
+        Min    = \(x) min(x, na.rm = TRUE),
+        Max    = \(x) max(x, na.rm = TRUE)
+      ),
+      .names = "{.col}_{.fn}"
+    ),
+    .groups = "drop"
+  ) |>
+  pivot_longer(
+    cols = starts_with("attendance_rate"),
+    names_to = c("Variable", "Statistic"),
+    names_sep = "_(?=[^_]+$)"
+  )
+
+table_attendance
 ```
 
-\
+#### Visualizations
+
+```{r}
+#create histogram of age
+student_risk |> 
+  ggplot(aes(age))+geom_histogram(binwidth = 1, color='blue', fill='red')+
+  labs(x = "Age",
+       y = "Count",
+       title = "Histogram of Age of Students")+
+  theme_minimal()
+
+#create histogram of weekly work hours by family income level
+student_risk |>
+  ggplot(aes(x = weekly_work_hours)) +
+  geom_histogram(
+    binwidth = 1,
+    fill = "blue",
+    color = "white"
+  ) +
+  facet_wrap(~ family_income_level) +
+  labs(
+    x = "Weekly Work Hours",
+    y = "Count",
+    title = "Weekly Work Hours by Family Income Level"
+  ) +
+  theme_minimal()
+
+#the histogram is difficult to interpret because of the large number of students that don't work.  Use a boxplot instead.
+student_risk |>
+  ggplot(aes(x = family_income_level, y = weekly_work_hours)) +
+  geom_boxplot(fill='orange') +
+  facet_wrap(~dropout)+
+  labs(
+    x = "Family Income Level",
+    y = "Hours Worked Weekly",
+    title = "Weekly Work Hours by Family Income Level",
+    subtitle = "By Dropout Status"
+  ) +
+  theme_minimal()
+
+#Create histogram for admission grade by first generation student status
+student_risk |>
+  ggplot(aes(x = admission_grade)) +
+  geom_histogram(
+    fill = "red",
+    color = "black"
+  ) +
+  facet_wrap(~ first_generation) +
+  labs(
+    x = "Admission Grade",
+    y = "Count",
+    title = "Admission Grade by First Generation Student Status"
+  ) +
+  theme_minimal()
+
+
+#compare distributions of attendance rate by dropout status
+student_risk |>
+  ggplot(aes(x = attendance_rate, fill=dropout)) +
+  geom_density(alpha=0.2) +
+  labs(
+    x = "Attendance Rate",
+    y = "Density",
+    title = "Attendance Rate by Dropout Status",
+    fill="Dropout"
+  ) +
+  theme_minimal()
+
+#create a violin plot
+ggplot(student_risk,
+       aes(x = dropout,
+           y = attendance_rate,
+           fill=dropout)) +
+  geom_violin() +
+  labs(
+    x = "Dropout Status",
+    y = "Attendance Rate",
+    title = "Attendance Rate by Dropout Status",
+    fill="Dropout Status"
+  ) +
+  
+  theme_minimal()
+
+
+#create scatterplot examining weekly work hours and attendance rate
+student_risk |>
+  ggplot(aes(x = weekly_work_hours, y=attendance_rate)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, color = "red") +
+  labs(
+    x = "Weekly Hours Worked",
+    y = "Attendance Rate",
+    title = "Weekly Hours Worked and Attendance Rate"
+  ) +
+  theme_minimal()
+
+
+```
+
+####  
