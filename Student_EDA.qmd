@@ -17,6 +17,8 @@ View(student_risk)
 
 ## EDA
 
+Converting 0/1 variables to Yes/No variables and forcing all categorical variables to be factors, including imposing ordering on family income level.
+
 ```{r}
 student_risk <- student_risk |>
   mutate(
@@ -46,5 +48,52 @@ student_risk <- student_risk |>
       ordered = TRUE
     )
   )
-View(student_risk)
+```
+
+### Categorical Tables and Summaries
+
+Determine how many variables have missing values. There are not any missing values in this data set.
+
+```{r}
+colSums(is.na(student_risk))
+```
+
+View the number of responses for each level of the categorical variables.
+
+```{r}
+lapply(
+  student_risk |>  select(where(is.factor)),
+  table
+)
+```
+
+Create two way tables to examine relationships in the data.
+
+```{r}
+#examine gender and nationality
+table(student_risk$gender, student_risk$nationality)
+
+#examine scholarship status and family income level
+prop.table(table(student_risk$family_income_level, student_risk$scholarship_holder))
+
+#examine scholarship status, family income, and gender
+prop.table(
+  table(student_risk$family_income_level, student_risk$scholarship_holder, student_risk$gender))
+
+#examine course of study and dropout
+prop.table(
+  table(student_risk$course_type, student_risk$dropout)
+)
+
+#examine study mode and dropout
+prop.table(
+  table(student_risk$study_mode, student_risk$dropout))
+
+#examine dropout by gender
+prop.table(table(student_risk$gender))
+
+#examine study course of study, gender and dropout
+prop.table(
+  table(student_risk$course_type, student_risk$dropout, student_risk$gender)
+)
 ```
