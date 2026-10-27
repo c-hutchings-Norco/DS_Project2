@@ -48,6 +48,7 @@ student_risk <- student_risk |>
       ordered = TRUE
     )
   )
+saveRDS(student_risk, "student_risk.rds")
 ```
 
 ### Categorical Tables and Summaries
