@@ -67,7 +67,7 @@ lapply(
 )
 ```
 
-Create two way tables to examine relationships in the data.
+Create two and three way tables to examine relationships in the data.
 
 ```{r}
 #examine gender and nationality
@@ -96,4 +96,144 @@ prop.table(table(student_risk$gender))
 prop.table(
   table(student_risk$course_type, student_risk$dropout, student_risk$gender)
 )
+
+#examine first generation student and dropout
+prop.table(
+  table(student_risk$first_generation, student_risk$dropout)
+)
 ```
+
+#### Visualizations
+
+```{r}
+#create visualizations to examine relationship between nationality and gender
+ggplot(student_risk,
+       aes(x = nationality, fill = gender)) +
+  geom_bar(position = "fill", width=0.8) +
+  labs(
+    title = "Proportion of Gender Within Nationalities",
+    y = "Proportion",
+    x = "Nationality"
+  ) +
+  theme_minimal()+
+  theme(
+    axis.text.x = element_text(
+      angle = 90,
+      hjust = 1
+    )
+  )
+
+#create visualization to examine relationship between scholarship status, family income, and gender
+ggplot(student_risk,
+       aes(x = family_income_level,
+           fill = scholarship_holder)) +
+  geom_bar(position = "fill") +
+  facet_wrap(~ gender) +
+  labs(
+    title = "Scholarship Status by Income and Gender",
+    x = "Family Income Level",
+    y = "Proportion"
+  ) +
+  theme_minimal()+
+  theme(
+    axis.text.x = element_text(
+      angle = 90,
+      hjust = 1
+    )
+  )
+
+#create visualization to examine dropout rate by course type using counts
+ggplot(student_risk,
+       aes(x = course_type,
+           fill = dropout)) +
+  geom_bar(position = "dodge") +
+  labs(
+    title = "Dropout Rate by Course Type",
+    x = "Course Type",
+    y = "Count"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(
+      angle = 90,
+      hjust = 1
+    )
+  )
+
+#create visualization to examine dropout rate by course type using proportions
+ggplot(student_risk,
+       aes(x = course_type,
+           fill = dropout)) +
+  geom_bar(position = "fill") +
+  labs(
+    title = "Dropout Rate by Course Type",
+    x = "Course Type",
+    y = "Proportion"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(
+      angle = 90,
+      hjust = 1
+    )
+  )+ coord_flip()
+
+#Heatmap for first generation and dropout status
+student_risk |>
+  count(first_generation, dropout) |>
+  ggplot(aes(first_generation, dropout, fill = n)) +
+  geom_tile() +
+  geom_text(aes(label = n), color = "white") +
+  scale_fill_viridis_c() +
+  labs(
+    x = "First-Generation Status",
+    y = "Dropout Status",
+    fill = "Count of Students",
+    title = "Relationship Between First-Generation Status and Dropout Risk"
+  ) +
+  theme_minimal()
+
+
+#Heatmap for first generation and dropout status using proportions
+student_risk |>
+  count(first_generation, dropout) |>
+  mutate(prop = n / sum(n)) |>
+  ggplot(aes(first_generation, dropout, fill = prop)) +
+  geom_tile() +
+  geom_text(aes(label = scales::percent(prop, accuracy = 0.1)),
+            color = "white") +
+  scale_fill_viridis_c(labels = scales::percent) +
+  labs(
+    x = "First-Generation Status",
+    y = "Dropout Status",
+    fill = "Percent of Students",
+    title = "Relationship Between First-Generation Status and Dropout Risk"
+  ) +
+  theme_minimal()
+
+```
+
+### Numerical Summaries
+
+Find the mean, standard deviation, median, minimum and maximum values for each numerical variable.
+
+```{r}
+table_student_risk <- student_risk |> 
+  select(-person_id) |> 
+  summarize(across(where(is.numeric),
+    list(
+    Mean= \(x) mean(x,na.rm=TRUE), 
+    std= \(x) sd(x, na.rm=TRUE),
+    Median= \(x) median(x,na.rm=TRUE),
+    Min = \(x) min(x, na.rm=TRUE),
+    Max = \(x) max(x, na.rm=TRUE)), .names='{.col}_{.fn}') ) |>
+  pivot_longer(
+    everything(),
+    names_to = c("Variable", "Statistic"),
+    names_sep = "_(?=[^_]+$)"
+  )
+
+table_student_risk
+```
+
+\
