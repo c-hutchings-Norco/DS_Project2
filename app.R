@@ -1,6 +1,10 @@
 library(shiny)
 library(shinyalert)
 library(tidyverse)
+library(DT)
+library(shinycssloaders)
+library(gt)
+
 
 student_risk <- readRDS("student_risk.rds")
 
@@ -130,12 +134,85 @@ ui <- fluidPage(
     
     mainPanel(
       
-      plotOutput("catplot", height = "600px")
+      tabsetPanel(
+        
+        tabPanel(
+          "About",
+          
+          h2("Student Academic Performance and Dropout Risk"),
+          
+          p("This application allows users to explore factors associated with student academic success and dropout risk."),
+          
+          p("The sidebar allows filtering the data based on demographic and academic characteristics."),
+          
+          p("The Data Download tab displays the filtered dataset and allows downloading the subsetted data."),
+          
+          p("The Data Exploration tab provides graphical and numerical summaries."),
+          
+          tags$a(
+            href = "https://www.kaggle.com/datasets/mohankrishnathalla/student-academic-performance-and-dropout-risk",
+            "Dataset Source",
+            target = "_blank"
+          ),
+          
+          br(),
+          br(),
+          
+          img(
+            src = "students.jpg",
+            width = "500px"
+          )
+        ),
+        
+        tabPanel(
+          "Data Download",
+          
+          DTOutput("datatable"),
+          
+          br(),
+          
+          downloadButton(
+            "download_data",
+            "Download Filtered Data"
+          )
+        ),
+        
+        tabPanel(
+          "Data Exploration",
+          
+          sidebarLayout(
+            
+            sidebarPanel(
+              
+              radioButtons(
+                "summary_type",
+                "Select Analysis",
+                choices = c(
+                  "One-Way Table",
+                  "Two-Way Table",
+                  "Bar Chart",
+                  "Numeric Summary"
+                )
+              ),
+              
+              uiOutput("analysis_ui")
+              
+            ),
+            
+            mainPanel(
+              
+              tableOutput("summary_table"),
+              
+              withSpinner(plotOutput("explore_plot"))
+              
+            )
+          )
+        )
+      )
+    )
       
     )
     
-  )
-  
 )
 
 # Define server
