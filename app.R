@@ -217,7 +217,186 @@ ui <- fluidPage(
 
 # Define server
 server <- function(input, output, session) {
+  output$datatable <- renderDT({
+    
+    filtered_data()
+    
+  })
+  output$analysis_ui <- renderUI({
+    
+    if(input$summary_type == "One-Way Table"){
+      
+      selectInput(
+        "oneway_var",
+        "Variable",
+        choices = categorical_vars
+      )
+      
+    }
+    
+    else if(input$summary_type == "Two-Way Table"){
+      
+      tagList(
+        
+        selectInput(
+          "row_var",
+          "Row Variable",
+          choices = categorical_vars
+        ),
+        
+        selectInput(
+          "col_var",
+          "Column Variable",
+          choices = categorical_vars
+        )
+        
+      )
+      
+    }
+    
+    else if(input$summary_type == "Bar Chart"){
+      
+      tagList(
+        
+        selectInput(
+          "bar_x",
+          "X Variable",
+          choices = categorical_vars
+        ),
+        
+        selectInput(
+          "bar_fill",
+          "Fill Variable",
+          choices = c("None", categorical_vars)
+        )
+      )
+    }
+    
+    else {
+      
+      tagList(
+        
+        selectInput(
+          "num_summary_var",
+          "Numeric Variable",
+          choices = numeric_vars
+        ),
+        
+        selectInput(
+          "group_var",
+          "Group By",
+          choices = categorical_vars
+        )
+        
+      )
+      
+    }
+    
+  })
   
+  output$download_data <- downloadHandler(
+    
+    filename = function(){
+      
+      paste0(
+        "student_risk_",
+        Sys.Date(),
+        ".csv"
+      )
+      
+    },
+    
+    content = function(file){
+      
+      write.csv(
+        filtered_data(),
+        file,
+        row.names = FALSE
+      )
+      
+    }
+    
+  )
+  output$summary_table <- renderTable({
+    
+    req(filtered_data())
+    
+    if(input$summary_type == "One-Way Table"){
+      
+      table(
+        filtered_data()[[input$oneway_var]]
+      )}
+      if(input$summary_type == "Two-Way Table"){
+        
+        table(
+          filtered_data()[[input$row_var]],
+          filtered_data()[[input$col_var]]
+        )}
+    if(input$summary_type == "Numeric Summary"){
+      
+      filtered_data() %>%
+        group_by(
+          .data[[input$group_var]]
+        ) %>%
+        summarize(
+          Mean = mean(
+            .data[[input$num_summary_var]],
+            na.rm = TRUE
+          ),
+          SD = sd(
+            .data[[input$num_summary_var]],
+            na.rm = TRUE
+          ),
+          Median = median(
+            .data[[input$num_summary_var]],
+            na.rm = TRUE
+          ),
+          Min = min(
+            .data[[input$num_summary_var]],
+            na.rm = TRUE
+          ),
+          Max = max(
+            .data[[input$num_summary_var]],
+            na.rm = TRUE
+          )
+        )
+      
+    }
+    
+  })
+  
+  output$explore_plot <- renderPlot({
+    
+    req(filtered_data())
+    
+    if(input$summary_type == "Bar Chart"){
+      
+      if(input$bar_fill == "None"){
+        
+        ggplot(
+          filtered_data(),
+          aes(x = .data[[input$bar_x]])
+        ) +
+          geom_bar(fill = "steelblue")
+        
+      } else {
+        
+        ggplot(
+          filtered_data(),
+          aes(
+            x = .data[[input$bar_x]],
+            fill = .data[[input$bar_fill]]
+          )
+        ) +
+          geom_bar(
+            position = "dodge"
+          )
+        
+      }
+      
+    }
+    
+  })
   output$slider1 <- renderUI({
     
     sliderInput(
