@@ -16,6 +16,42 @@ categorical_vars <- names(student_risk)[
 ]
 categorical_vars <- setdiff(categorical_vars, "person_id")
 
+var_labels <- c(
+  attendance_rate = "Attendance Rate",
+  admission_grade = "Admission Grade",
+  disability_status = "Disability Status",
+  tuition_up_to_date = "Current on Tuition Payment",
+  part_time_job = "Part Time Job",
+  semester = "Semester Number",
+  international_student = "International Student",
+  previous_qualification_grade = "Previous Qualification Grade",
+  units_enrolled = "Units Enrolled",
+  units_passed = "Units Passed",
+  units_failed = "Units Failed",
+  gpa_semester_1 = "First Semester GPA",
+  gpa_semester_2 = "Second Semester GPA",
+  assignments_submitted_rate = "Rate of Submitted Assignments",
+  library_visits_per_month = "Library Visits Each Month",
+  lms_logins_per_week = "Logins per Week",
+  extracurricular_activities = "Extracurricular Activities",
+  missed_deadlines = "Missed Deadlines",
+  stress_level = "Level of Stress",
+  mental_health_support = "Mental Health Support",
+  satisfaction_score = "Satisfaction Score",
+  commute_time_mins = "Commute Time (mins)",
+  sleep_hours = "Hours of Sleep",
+  age = "Age",
+  weekly_work_hours = "Weekly Work Hours",
+  family_income_level = "Family Income Level",
+  first_generation = "First Generation Student",
+  course_type = "Course Type",
+  scholarship_holder = "Scholarship Recipient",
+  dropout = "Dropout Status",
+  study_mode = "Study Mode",
+  nationality = "Nationality",
+  gender = "Gender"
+)
+
 # Define UI for application
 ui <- fluidPage(
   
@@ -34,7 +70,10 @@ ui <- fluidPage(
       selectInput(
         "numvar1",
         "Numeric Variable 1",
-        choices = numeric_vars,
+        choices = setNames(
+          numeric_vars,
+          var_labels[numeric_vars]
+        ),
         selected = numeric_vars[1]
       ),
       
@@ -45,7 +84,10 @@ ui <- fluidPage(
       selectInput(
         "numvar2",
         "Numeric Variable 2",
-        choices = numeric_vars,
+        choices = setNames(
+          numeric_vars,
+          var_labels[numeric_vars]
+        ),
         selected = numeric_vars[2]
       ),
       
@@ -54,6 +96,9 @@ ui <- fluidPage(
       hr(),
       
       h4("Categorical Filters"),
+      helpText(
+        "Select one or more levels for any categorical variable. Leave a filter blank to include all levels."
+      ),
       
       selectizeInput(
         "family_income_level",
@@ -196,7 +241,10 @@ server <- function(input, output, session) {
       selectInput(
         "oneway_var",
         "Variable",
-        choices = categorical_vars
+        choices = setNames(
+          categorical_vars,
+          var_labels[categorical_vars]
+        )
       )
       
     } else if(input$summary_type == "Two-Way Table") {
@@ -206,13 +254,19 @@ server <- function(input, output, session) {
         selectInput(
           "row_var",
           "Row Variable",
-          choices = categorical_vars
+          choices = setNames(
+            categorical_vars,
+            var_labels[categorical_vars]
+          )
         ),
         
         selectInput(
           "col_var",
           "Column Variable",
-          choices = categorical_vars
+          choices = setNames(
+            categorical_vars,
+            var_labels[categorical_vars]
+          )
         )
         
       )
@@ -224,19 +278,28 @@ server <- function(input, output, session) {
         selectInput(
           "table_var1",
           "Variable 1",
-          choices = categorical_vars
+          choices = setNames(
+            categorical_vars,
+            var_labels[categorical_vars]
+          )
         ),
         
         selectInput(
           "table_var2",
           "Variable 2",
-          choices = categorical_vars
+          choices = setNames(
+            categorical_vars,
+            var_labels[categorical_vars]
+          )
         ),
         
         selectInput(
           "table_var3",
           "Variable 3",
-          choices = categorical_vars
+          choices = setNames(
+            categorical_vars,
+            var_labels[categorical_vars]
+          )
         )
         
       )
@@ -248,13 +311,22 @@ server <- function(input, output, session) {
         selectInput(
           "bar_x",
           "X Variable",
-          choices = categorical_vars
+          choices = setNames(
+            categorical_vars,
+            var_labels[categorical_vars]
+          )
         ),
         
         selectInput(
           "bar_fill",
           "Fill Variable",
-          choices = c("None", categorical_vars)
+          choices = c(
+            "None" = "None",
+            setNames(
+              categorical_vars,
+              var_labels[categorical_vars]
+            )
+          )
         )
         
       )
@@ -266,23 +338,33 @@ server <- function(input, output, session) {
         selectInput(
           "num_summary_var",
           "Numeric Variable",
-          choices = numeric_vars
+          choices = setNames(
+            numeric_vars,
+            var_labels[numeric_vars]
+          )
         ),
         
         selectInput(
           "group_var",
           "Group By",
-          choices = categorical_vars
+          choices = setNames(
+            categorical_vars,
+            var_labels[categorical_vars]
+          )
         )
         
       )
+      
       
     } else if(input$summary_type == "Histogram") {
       
       selectInput(
         "num_summary_var",
         "Numeric Variable",
-        choices = numeric_vars
+        choices = setNames(
+          numeric_vars,
+          var_labels[numeric_vars]
+        )
       )
       
     } else if(input$summary_type == "Numeric Summary") {
@@ -292,13 +374,19 @@ server <- function(input, output, session) {
         selectInput(
           "num_summary_var",
           "Numeric Variable",
-          choices = numeric_vars
+          choices = setNames(
+            numeric_vars,
+            var_labels[numeric_vars]
+          )
         ),
         
         selectInput(
           "group_var",
           "Group By",
-          choices = categorical_vars
+          choices = setNames(
+            categorical_vars,
+            var_labels[categorical_vars]
+          )
         )
         
       )
@@ -454,7 +542,7 @@ server <- function(input, output, session) {
     
     sliderInput(
       "slider_num1",
-      paste("Filter", input$numvar1),
+      paste("Filter", var_labels[input$numvar1]),
       min = min(student_risk[[input$numvar1]], na.rm = TRUE),
       max = max(student_risk[[input$numvar1]], na.rm = TRUE),
       value = c(
@@ -469,7 +557,7 @@ server <- function(input, output, session) {
     
     sliderInput(
       "slider_num2",
-      paste("Filter", input$numvar2),
+      paste("Filter", var_labels[input$numvar2]),
       min = min(student_risk[[input$numvar2]], na.rm = TRUE),
       max = max(student_risk[[input$numvar2]], na.rm = TRUE),
       value = c(
@@ -484,25 +572,25 @@ server <- function(input, output, session) {
     
     data <- student_risk
     
-    data <- data |>
-      filter(
-        family_income_level %in% input$family_income_level
-      )
+    if(length(input$family_income_level) > 0) {
+      data <- data |>
+        filter(family_income_level %in% input$family_income_level)
+    }
     
-    data <- data |>
-      filter(
-        gender %in% input$gender
-      )
+    if(length(input$gender) > 0) {
+      data <- data |>
+        filter(gender %in% input$gender)
+    }
     
-    data <- data |>
-      filter(
-        nationality %in% input$nationality
-      )
+    if(length(input$nationality) > 0) {
+      data <- data |>
+        filter(nationality %in% input$nationality)
+    }
     
-    data <- data |>
-      filter(
-        course_type %in% input$course_type
-      )
+    if(length(input$course_type) > 0) {
+      data <- data |>
+        filter(course_type %in% input$course_type)
+    }
     
     if(!is.null(input$slider_num1)){
       data <- data |>
