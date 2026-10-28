@@ -159,7 +159,7 @@ ui <- fluidPage(
           br(),
           
           img(
-            src = "students.jpg",
+            src = "students.jpeg",
             width = "500px"
           )
         ),
@@ -191,9 +191,11 @@ ui <- fluidPage(
                   "One-Way Table",
                   "Two-Way Table",
                   "Bar Chart",
+                  "Boxplot",
+                  "Histogram",
                   "Numeric Summary"
                 )
-              ),
+             ),
               
               uiOutput("analysis_ui")
               
@@ -366,37 +368,64 @@ server <- function(input, output, session) {
   })
   
   output$explore_plot <- renderPlot({
-    
-    req(filtered_data())
-    
-    if(input$summary_type == "Bar Chart"){
       
-      if(input$bar_fill == "None"){
+      validate(
+        need(
+          nrow(filtered_data()) > 0,
+          "No observations match selected filters."
+        )
+      )
+      
+      if(input$summary_type == "Bar Chart") {
         
-        ggplot(
-          filtered_data(),
-          aes(x = .data[[input$bar_x]])
-        ) +
-          geom_bar(fill = "steelblue")
+        if(input$bar_fill == "None") {
+          
+          ggplot(
+            filtered_data(),
+            aes(x = .data[[input$bar_x]])
+          ) +
+            geom_bar(fill = "steelblue")
+          
+        } else {
+          
+          ggplot(
+            filtered_data(),
+            aes(
+              x = .data[[input$bar_x]],
+              fill = .data[[input$bar_fill]]
+            )
+          ) +
+            geom_bar(position = "dodge")
+          
+        }
         
-      } else {
+      } else if(input$summary_type == "Boxplot") {
         
         ggplot(
           filtered_data(),
           aes(
-            x = .data[[input$bar_x]],
-            fill = .data[[input$bar_fill]]
+            x = .data[[input$group_var]],
+            y = .data[[input$num_summary_var]]
           )
         ) +
-          geom_bar(
-            position = "dodge"
+          geom_boxplot()
+        
+      } else if(input$summary_type == "Histogram") {
+        
+        ggplot(
+          filtered_data(),
+          aes(
+            x = .data[[input$num_summary_var]]
+          )
+        ) +
+          geom_histogram(
+            bins = 30,
+            fill = "steelblue"
           )
         
       }
       
-    }
-    
-  })
+    })
   output$slider1 <- renderUI({
     
     sliderInput(
