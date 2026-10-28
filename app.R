@@ -609,7 +609,9 @@ server <- function(input, output, session) {
     )
     
     groups <- unique(
-      filtered_data()[[input$table_var3]]
+      as.character(
+        filtered_data()[[input$table_var3]]
+      )
     )
     
     tagList(
@@ -625,7 +627,9 @@ server <- function(input, output, session) {
           
           out <- filtered_data() |>
             filter(
-              .data[[input$table_var3]] == g
+              as.character(
+                .data[[input$table_var3]]
+              ) == g
             ) |>
             count(
               .data[[input$table_var1]],
@@ -664,7 +668,6 @@ server <- function(input, output, session) {
     )
     
   })
-  
   output$explore_plot <- renderPlot({
       
       validate(
