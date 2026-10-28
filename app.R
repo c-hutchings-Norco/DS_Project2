@@ -322,49 +322,37 @@ server <- function(input, output, session) {
   output$summary_table <- renderTable({
     
     req(filtered_data())
-    
-    if(input$summary_type == "One-Way Table"){
+    if(input$summary_type == "One-Way Table") {
       
       table(
         filtered_data()[[input$oneway_var]]
-      )}
-      if(input$summary_type == "Two-Way Table"){
-        
-        table(
-          filtered_data()[[input$row_var]],
-          filtered_data()[[input$col_var]]
-        )}
-    if(input$summary_type == "Numeric Summary"){
+      )
+      
+    } 
+    else if(input$summary_type == "Two-Way Table") {
+      
+      req(input$row_var, input$col_var)
+      
+      table(
+        filtered_data()[[input$row_var]],
+        filtered_data()[[input$col_var]]
+      )
+      
+    } 
+    else if(input$summary_type == "Numeric Summary") {
       
       filtered_data() %>%
-        group_by(
-          .data[[input$group_var]]
-        ) %>%
+        group_by(.data[[input$group_var]]) %>%
         summarize(
-          Mean = mean(
-            .data[[input$num_summary_var]],
-            na.rm = TRUE
-          ),
-          SD = sd(
-            .data[[input$num_summary_var]],
-            na.rm = TRUE
-          ),
-          Median = median(
-            .data[[input$num_summary_var]],
-            na.rm = TRUE
-          ),
-          Min = min(
-            .data[[input$num_summary_var]],
-            na.rm = TRUE
-          ),
-          Max = max(
-            .data[[input$num_summary_var]],
-            na.rm = TRUE
-          )
+          Mean = mean(.data[[input$num_summary_var]], na.rm = TRUE),
+          SD = sd(.data[[input$num_summary_var]], na.rm = TRUE),
+          Median = median(.data[[input$num_summary_var]], na.rm = TRUE),
+          Min = min(.data[[input$num_summary_var]], na.rm = TRUE),
+          Max = max(.data[[input$num_summary_var]], na.rm = TRUE),
+          .groups = "drop"
         )
       
     }
-    
   })
   
   output$explore_plot <- renderPlot({
@@ -376,9 +364,11 @@ server <- function(input, output, session) {
         )
       )
       
-      if(input$summary_type == "Bar Chart") {
-        
-        if(input$bar_fill == "None") {
+    if(input$summary_type == "Bar Chart") {
+      
+      req(input$bar_x, input$bar_fill)
+      
+      if(input$bar_fill == "None") {
           
           ggplot(
             filtered_data(),
@@ -399,9 +389,11 @@ server <- function(input, output, session) {
           
         }
         
-      } else if(input$summary_type == "Boxplot") {
-        
-        ggplot(
+    } else if(input$summary_type == "Boxplot") {
+      
+      req(input$group_var, input$num_summary_var)
+      
+      ggplot(
           filtered_data(),
           aes(
             x = .data[[input$group_var]],
@@ -410,9 +402,11 @@ server <- function(input, output, session) {
         ) +
           geom_boxplot()
         
-      } else if(input$summary_type == "Histogram") {
-        
-        ggplot(
+    } else if(input$summary_type == "Histogram") {
+      
+      req(input$num_summary_var)
+      
+      ggplot(
           filtered_data(),
           aes(
             x = .data[[input$num_summary_var]]
@@ -515,32 +509,7 @@ server <- function(input, output, session) {
     
   }, ignoreInit = FALSE)
   
-  output$catplot <- renderPlot({
-    
-    req(nrow(filtered_data()) > 0)
-    
-    ggplot(
-      filtered_data(),
-      aes(
-        x = .data[[input$catvar1]],
-        fill = .data[[input$catvar2]]
-      )
-    ) +
-      geom_bar(position = "fill") +
-      scale_y_continuous(labels = scales::percent_format()) +
-      labs(
-        x = input$catvar1,
-        fill = input$catvar2,
-        y = "Percent",
-        title = paste(
-          input$catvar2,
-          "within",
-          input$catvar1
-        )
-      ) +
-      theme_minimal()
-    
-  })
+
   
 }
 
