@@ -274,7 +274,33 @@ server <- function(input, output, session) {
       )
     }
     
-    else {
+    else if(input$summary_type == "Boxplot") {
+      
+      tagList(
+        
+        selectInput(
+          "num_summary_var",
+          "Numeric Variable",
+          choices = numeric_vars
+        ),
+        
+        selectInput(
+          "group_var",
+          "Group By",
+          choices = categorical_vars
+        )
+        
+      )
+      
+    } else if(input$summary_type == "Histogram") {
+      
+      selectInput(
+        "num_summary_var",
+        "Numeric Variable",
+        choices = numeric_vars
+      )
+      
+    } else if(input$summary_type == "Numeric Summary") {
       
       tagList(
         
