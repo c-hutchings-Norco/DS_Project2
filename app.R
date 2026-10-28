@@ -201,8 +201,12 @@ ui <- fluidPage(
                   "Two-Way Table",
                   "Three-Way Table",
                   "Bar Chart",
+                  "Heatmap",
                   "Boxplot",
                   "Histogram",
+                  "Density Plot",
+                  "Violin Plot",
+                  "Scatterplot",
                   "Numeric Summary"
                 )
              ),
@@ -347,16 +351,42 @@ server <- function(input, output, session) {
         selectInput(
           "group_var",
           "Group By",
-          choices = setNames(
+          choices = c(
+            "None" = "None", setNames(
             categorical_vars,
-            var_labels[categorical_vars]
+            var_labels[categorical_vars])
           )
         )
         
       )
       
       
-    } else if(input$summary_type == "Histogram") {
+    }else if(input$summary_type == "Scatterplot") {
+      
+      tagList(
+        
+        selectInput(
+          "scatter_x",
+          "X Variable",
+          choices = setNames(
+            numeric_vars,
+            var_labels[numeric_vars]
+          )
+        ),
+        
+        selectInput(
+          "scatter_y",
+          "Y Variable",
+          choices = setNames(
+            numeric_vars,
+            var_labels[numeric_vars]
+          )
+        )
+        
+      )
+      
+      
+    }else if(input$summary_type == "Histogram") {
       
       selectInput(
         "num_summary_var",
@@ -367,7 +397,7 @@ server <- function(input, output, session) {
         )
       )
       
-    } else if(input$summary_type == "Numeric Summary") {
+    } else if(input$summary_type == "Density Plot") {
       
       tagList(
         
@@ -383,9 +413,37 @@ server <- function(input, output, session) {
         selectInput(
           "group_var",
           "Group By",
+          choices = c(
+            "None" = "None",
+            setNames(
+              categorical_vars,
+              var_labels[categorical_vars]
+            )
+          )
+        )
+        
+      )
+      
+    }else if(input$summary_type == "Numeric Summary") {
+      
+      tagList(
+        
+        selectInput(
+          "num_summary_var",
+          "Numeric Variable",
           choices = setNames(
+            numeric_vars,
+            var_labels[numeric_vars]
+          )
+        ),
+        
+        selectInput(
+          "group_var",
+          "Group By",
+          choices = c(
+            "None" = "None", setNames(
             categorical_vars,
-            var_labels[categorical_vars]
+            var_labels[categorical_vars])
           )
         )
         
@@ -432,10 +490,16 @@ server <- function(input, output, session) {
       
       req(input$row_var, input$col_var)
       
-      table(
-        filtered_data()[[input$row_var]],
-        filtered_data()[[input$col_var]]
-      )
+      filtered_data() |> 
+        count(
+          .data[[input$row_var]],
+          .data[[input$col_var]]
+        ) |> 
+        pivot_wider(
+          names_from = all_of(input$col_var),
+          values_from = n,
+          values_fill = 0
+        )
       
     } 
     else if(input$summary_type == "Three-Way Table") {
@@ -459,16 +523,31 @@ server <- function(input, output, session) {
       
       req(input$group_var, input$num_summary_var)
       
-      filtered_data() %>%
-        group_by(.data[[input$group_var]]) %>%
-        summarize(
-          Mean = mean(.data[[input$num_summary_var]], na.rm = TRUE),
-          SD = sd(.data[[input$num_summary_var]], na.rm = TRUE),
-          Median = median(.data[[input$num_summary_var]], na.rm = TRUE),
-          Min = min(.data[[input$num_summary_var]], na.rm = TRUE),
-          Max = max(.data[[input$num_summary_var]], na.rm = TRUE),
-          .groups = "drop"
-        )
+      if(input$group_var == "None") {
+        
+        filtered_data() |>
+          summarize(
+            Mean = mean(.data[[input$num_summary_var]], na.rm=TRUE),
+            SD = sd(.data[[input$num_summary_var]], na.rm=TRUE),
+            Median = median(.data[[input$num_summary_var]], na.rm=TRUE),
+            Min = min(.data[[input$num_summary_var]], na.rm=TRUE),
+            Max = max(.data[[input$num_summary_var]], na.rm=TRUE)
+          )
+        
+      } else {
+        
+        filtered_data() |>
+          group_by(.data[[input$group_var]]) |>
+          summarize(
+            Mean = mean(.data[[input$num_summary_var]], na.rm=TRUE),
+            SD = sd(.data[[input$num_summary_var]], na.rm=TRUE),
+            Median = median(.data[[input$num_summary_var]], na.rm=TRUE),
+            Min = min(.data[[input$num_summary_var]], na.rm=TRUE),
+            Max = max(.data[[input$num_summary_var]], na.rm=TRUE),
+            .groups="drop"
+          )
+        
+      }
       
     }
   })
@@ -509,9 +588,21 @@ server <- function(input, output, session) {
         
     } else if(input$summary_type == "Boxplot") {
       
-      req(input$group_var, input$num_summary_var)
+      req(input$num_summary_var)
       
-      ggplot(
+      if(input$group_var == "None") {
+        
+        ggplot(
+          filtered_data(),
+          aes(
+            y = .data[[input$num_summary_var]]
+          )
+        ) +
+          geom_boxplot(fill = "steelblue")
+        
+      } else {
+        
+        ggplot(
           filtered_data(),
           aes(
             x = .data[[input$group_var]],
@@ -519,8 +610,10 @@ server <- function(input, output, session) {
           )
         ) +
           geom_boxplot()
+      
+    }
         
-    } else if(input$summary_type == "Histogram") {
+   }else if(input$summary_type == "Histogram") {
       
       req(input$num_summary_var)
       
@@ -537,6 +630,65 @@ server <- function(input, output, session) {
         
       }
       
+    else if(input$summary_type == "Density Plot") {
+      
+      req(input$num_summary_var)
+      
+      if(input$group_var == "None") {
+        
+        ggplot(
+          filtered_data(),
+          aes(
+            x = .data[[input$num_summary_var]]
+          )
+        ) +
+          geom_density(fill = "steelblue", alpha = .3)
+        
+      } else {
+        
+        ggplot(
+          filtered_data(),
+          aes(
+            x = .data[[input$num_summary_var]],
+            fill = .data[[input$group_var]]
+          )
+        ) +
+          geom_density(alpha = .2)
+        
+      }
+      
+    }
+    
+    else if(input$summary_type == "Scatterplot") {
+      
+      req(input$scatter_x, input$scatter_y)
+      
+      ggplot(
+        filtered_data(),
+        aes(
+          x = .data[[input$scatter_x]],
+          y = .data[[input$scatter_y]]
+        )
+      ) +
+        geom_point() +
+        geom_smooth(
+          method = "lm",
+          se = FALSE,
+          color = "red"
+        ) +
+        labs(
+          x = var_labels[input$scatter_x],
+          y = var_labels[input$scatter_y],
+          title = paste(
+            var_labels[input$scatter_y],
+            "vs",
+            var_labels[input$scatter_x]
+          )
+        ) +
+        theme_minimal()
+      
+    }
+    
     })
   output$slider1 <- renderUI({
     
