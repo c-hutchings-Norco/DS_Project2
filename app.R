@@ -19,35 +19,17 @@ categorical_vars <- setdiff(categorical_vars, "person_id")
 # Define UI for application
 ui <- fluidPage(
   
-  h2("Student Performance and Risks"),
+  h2("Student Performance and Dropout Risks"),
   
   sidebarLayout(
     
     sidebarPanel(
       
-      h2("Student Performance and Risk Variables"),
+      h3("Select Variables to Filter Data"),
       
       hr(),
       
-      h3("Categorical Variables"),
-      
-      selectInput(
-        "catvar1",
-        "Categorical Variable",
-        choices = categorical_vars,
-        selected = categorical_vars[1]
-      ),
-      
-      selectInput(
-        "catvar2",
-        "Group By",
-        choices = categorical_vars,
-        selected = categorical_vars[2]
-      ),
-      
-      hr(),
-      
-      h3("Numeric Variables"),
+      h4("Numerical Filters"),
       
       selectInput(
         "numvar1",
@@ -71,55 +53,38 @@ ui <- fluidPage(
       
       hr(),
       
-      h3("Categorical Filters"),
+      h4("Categorical Filters"),
       
-      radioButtons(
+      selectizeInput(
         "family_income_level",
         "Family Income Level",
-        choices = c("All", "Low", "Middle", "High"),
-        selected = "All"
+        choices = levels(student_risk$family_income_level),
+        selected = NULL,
+        multiple = TRUE
       ),
       
-      radioButtons(
-        "dropout",
-        "Dropout Status",
-        choices = c("All", "Yes", "No"),
-        selected = "All"
-      ),
-      
-      radioButtons(
-        "first_generation",
-        "First Generation Student",
-        choices = c("All", "Yes", "No"),
-        selected = "All"
-      ),
-      
-      radioButtons(
-        "scholarship_holder",
-        "Scholarship Awarded",
-        choices = c("All", "Yes", "No"),
-        selected = "All"
-      ),
-      
-      radioButtons(
+      selectizeInput(
         "gender",
         "Gender",
-        choices = c("All", "Female", "Male", "Other"),
-        selected = "All"
+        choices = levels(student_risk$gender),
+        selected = NULL,
+        multiple = TRUE
       ),
       
-      radioButtons(
+      selectizeInput(
         "nationality",
         "Nationality",
-        choices = c("All", levels(student_risk$nationality)),
-        selected = "All"
+        choices = levels(student_risk$nationality),
+        selected = NULL,
+        multiple = TRUE
       ),
       
-      radioButtons(
+      selectizeInput(
         "course_type",
         "Type of Course",
-        choices = c("All", levels(student_risk$course_type)),
-        selected = "All"
+        choices = levels(student_risk$course_type),
+        selected = NULL,
+        multiple = TRUE
       ),
       
       hr(),
@@ -156,7 +121,6 @@ ui <- fluidPage(
           ),
           
           br(),
-          br(),
           
           img(
             src = "students.jpeg",
@@ -190,6 +154,7 @@ ui <- fluidPage(
                 choices = c(
                   "One-Way Table",
                   "Two-Way Table",
+                  "Three-Way Table",
                   "Bar Chart",
                   "Boxplot",
                   "Histogram",
@@ -226,7 +191,7 @@ server <- function(input, output, session) {
   })
   output$analysis_ui <- renderUI({
     
-    if(input$summary_type == "One-Way Table"){
+    if(input$summary_type == "One-Way Table") {
       
       selectInput(
         "oneway_var",
@@ -234,9 +199,7 @@ server <- function(input, output, session) {
         choices = categorical_vars
       )
       
-    }
-    
-    else if(input$summary_type == "Two-Way Table"){
+    } else if(input$summary_type == "Two-Way Table") {
       
       tagList(
         
@@ -254,9 +217,31 @@ server <- function(input, output, session) {
         
       )
       
-    }
-    
-    else if(input$summary_type == "Bar Chart"){
+    } else if(input$summary_type == "Three-Way Table") {
+      
+      tagList(
+        
+        selectInput(
+          "table_var1",
+          "Variable 1",
+          choices = categorical_vars
+        ),
+        
+        selectInput(
+          "table_var2",
+          "Variable 2",
+          choices = categorical_vars
+        ),
+        
+        selectInput(
+          "table_var3",
+          "Variable 3",
+          choices = categorical_vars
+        )
+        
+      )
+      
+    } else if(input$summary_type == "Bar Chart") {
       
       tagList(
         
@@ -271,10 +256,10 @@ server <- function(input, output, session) {
           "Fill Variable",
           choices = c("None", categorical_vars)
         )
+        
       )
-    }
-    
-    else if(input$summary_type == "Boxplot") {
+      
+    } else if(input$summary_type == "Boxplot") {
       
       tagList(
         
@@ -349,7 +334,7 @@ server <- function(input, output, session) {
     
     req(filtered_data())
     if(input$summary_type == "One-Way Table") {
-      
+      req(input$oneway_var)
       table(
         filtered_data()[[input$oneway_var]]
       )
@@ -365,7 +350,26 @@ server <- function(input, output, session) {
       )
       
     } 
+    else if(input$summary_type == "Three-Way Table") {
+      
+      req(
+        input$table_var1,
+        input$table_var2,
+        input$table_var3
+      )
+      
+      prop.table(
+        table(
+          filtered_data()[[input$table_var1]],
+          filtered_data()[[input$table_var2]],
+          filtered_data()[[input$table_var3]]
+        )
+      )
+      
+    }
     else if(input$summary_type == "Numeric Summary") {
+      
+      req(input$group_var, input$num_summary_var)
       
       filtered_data() %>%
         group_by(.data[[input$group_var]]) %>%
@@ -480,40 +484,25 @@ server <- function(input, output, session) {
     
     data <- student_risk
     
-    if(input$family_income_level != "All"){
-      data <- data |>
-        filter(family_income_level == input$family_income_level)
-    }
+    data <- data |>
+      filter(
+        family_income_level %in% input$family_income_level
+      )
     
-    if(input$dropout != "All"){
-      data <- data |>
-        filter(dropout == input$dropout)
-    }
+    data <- data |>
+      filter(
+        gender %in% input$gender
+      )
     
-    if(input$first_generation != "All"){
-      data <- data |>
-        filter(first_generation == input$first_generation)
-    }
+    data <- data |>
+      filter(
+        nationality %in% input$nationality
+      )
     
-    if(input$scholarship_holder != "All"){
-      data <- data |>
-        filter(scholarship_holder == input$scholarship_holder)
-    }
-    
-    if(input$gender != "All"){
-      data <- data |>
-        filter(gender == input$gender)
-    }
-    
-    if(input$nationality != "All"){
-      data <- data |>
-        filter(nationality == input$nationality)
-    }
-    
-    if(input$course_type != "All"){
-      data <- data |>
-        filter(course_type == input$course_type)
-    }
+    data <- data |>
+      filter(
+        course_type %in% input$course_type
+      )
     
     if(!is.null(input$slider_num1)){
       data <- data |>
