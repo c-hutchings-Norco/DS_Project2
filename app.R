@@ -218,6 +218,8 @@ ui <- fluidPage(
               
               tableOutput("summary_table"),
               
+              uiOutput("threeway_tables"),
+              
               withSpinner(plotOutput("explore_plot"))
               
             )
@@ -519,47 +521,45 @@ server <- function(input, output, session) {
     
     req(filtered_data())
     if(input$summary_type == "One-Way Table") {
-      req(input$oneway_var)
-      table(
-        filtered_data()[[input$oneway_var]]
-      )
       
-    } 
+      req(input$oneway_var)
+      
+      out <- filtered_data() |>
+        count(
+          .data[[input$oneway_var]]
+        ) |>
+        mutate(
+          Percent = round(
+            100 * n / sum(n),
+            1
+          )
+        )
+      
+      names(out)[1] <- var_labels[input$oneway_var]
+      
+      out
+      
+    }
     else if(input$summary_type == "Two-Way Table") {
       
       req(input$row_var, input$col_var)
       
-      filtered_data() |> 
+      out <- filtered_data() |>
         count(
           .data[[input$row_var]],
           .data[[input$col_var]]
-        ) |> 
+        ) |>
         pivot_wider(
           names_from = all_of(input$col_var),
           values_from = n,
           values_fill = 0
         )
       
-    } 
-    else if(input$summary_type == "Three-Way Table") {
+      names(out)[1] <- var_labels[input$row_var]
       
-      req(
-        input$table_var1,
-        input$table_var2,
-        input$table_var3
-      )
+      out$Total <- rowSums(out[, -1])
       
-      filtered_data() |>
-        count(
-          .data[[input$table_var1]],
-          .data[[input$table_var2]],
-          .data[[input$table_var3]]
-        ) |>
-        pivot_wider(
-          names_from = all_of(input$table_var2),
-          values_from = n,
-          values_fill = 0
-        )
+      out
       
     }
     
@@ -594,6 +594,75 @@ server <- function(input, output, session) {
       }
       
     }
+  })
+  
+  output$threeway_tables <- renderUI({
+    
+    if(input$summary_type != "Three-Way Table") {
+      return(NULL)
+    }
+    
+    req(
+      input$table_var1,
+      input$table_var2,
+      input$table_var3
+    )
+    
+    groups <- unique(
+      filtered_data()[[input$table_var3]]
+    )
+    
+    tagList(
+      
+      lapply(groups, function(g) {
+        
+        output_id <- paste0(
+          "threeway_",
+          make.names(g)
+        )
+        
+        output[[output_id]] <- renderTable({
+          
+          out <- filtered_data() |>
+            filter(
+              .data[[input$table_var3]] == g
+            ) |>
+            count(
+              .data[[input$table_var1]],
+              .data[[input$table_var2]]
+            ) |>
+            pivot_wider(
+              names_from = all_of(input$table_var2),
+              values_from = n,
+              values_fill = 0
+            )
+          
+          names(out)[1] <- var_labels[input$table_var1]
+          
+          out
+          
+        })
+        
+        tagList(
+          
+          h4(
+            paste(
+              var_labels[input$table_var3],
+              "=",
+              g
+            )
+          ),
+          
+          tableOutput(output_id),
+          
+          br()
+          
+        )
+        
+      })
+      
+    )
+    
   })
   
   output$explore_plot <- renderPlot({
