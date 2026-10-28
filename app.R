@@ -676,6 +676,15 @@ server <- function(input, output, session) {
           "No observations match selected filters."
         )
       )
+    if(input$summary_type %in% c(
+      "One-Way Table",
+      "Two-Way Table",
+      "Three-Way Table",
+      "Numeric Summary"
+    )){
+      return(NULL)
+    }
+    
       
     if(input$summary_type == "Bar Chart") {
       
@@ -855,7 +864,8 @@ server <- function(input, output, session) {
         ) +
         theme_minimal()
       
-      if(input$hist_facet != "None") {
+      if(!is.null(input$hist_facet) &&
+        input$hist_facet != "None") {
         
         p <- p +
           facet_wrap(
