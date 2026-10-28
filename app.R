@@ -205,7 +205,6 @@ ui <- fluidPage(
                   "Boxplot",
                   "Histogram",
                   "Density Plot",
-                  "Violin Plot",
                   "Scatterplot",
                   "Numeric Summary"
                 )
@@ -361,6 +360,30 @@ server <- function(input, output, session) {
       )
       
       
+    }else if(input$summary_type == "Heatmap") {
+      
+      tagList(
+        
+        selectInput(
+          "heat_x",
+          "X Variable",
+          choices = setNames(
+            categorical_vars,
+            var_labels[categorical_vars]
+          )
+        ),
+        
+        selectInput(
+          "heat_y",
+          "Y Variable",
+          choices = setNames(
+            categorical_vars,
+            var_labels[categorical_vars]
+          )
+        )
+        
+      )
+      
     }else if(input$summary_type == "Scatterplot") {
       
       tagList(
@@ -386,15 +409,31 @@ server <- function(input, output, session) {
       )
       
       
-    }else if(input$summary_type == "Histogram") {
+    } else if(input$summary_type == "Histogram") {
       
-      selectInput(
-        "num_summary_var",
-        "Numeric Variable",
-        choices = setNames(
-          numeric_vars,
-          var_labels[numeric_vars]
+      tagList(
+        
+        selectInput(
+          "num_summary_var",
+          "Numeric Variable",
+          choices = setNames(
+            numeric_vars,
+            var_labels[numeric_vars]
+          )
+        ),
+        
+        selectInput(
+          "hist_facet",
+          "Group By",
+          choices = c(
+            "None" = "None",
+            setNames(
+              categorical_vars,
+              var_labels[categorical_vars]
+            )
+          )
         )
+        
       )
       
     } else if(input$summary_type == "Density Plot") {
@@ -510,15 +549,20 @@ server <- function(input, output, session) {
         input$table_var3
       )
       
-      prop.table(
-        table(
-          filtered_data()[[input$table_var1]],
-          filtered_data()[[input$table_var2]],
-          filtered_data()[[input$table_var3]]
+      filtered_data() |>
+        count(
+          .data[[input$table_var1]],
+          .data[[input$table_var2]],
+          .data[[input$table_var3]]
+        ) |>
+        pivot_wider(
+          names_from = all_of(input$table_var2),
+          values_from = n,
+          values_fill = 0
         )
-      )
       
     }
+    
     else if(input$summary_type == "Numeric Summary") {
       
       req(input$group_var, input$num_summary_var)
@@ -566,27 +610,99 @@ server <- function(input, output, session) {
       req(input$bar_x, input$bar_fill)
       
       if(input$bar_fill == "None") {
-          
-          ggplot(
-            filtered_data(),
-            aes(x = .data[[input$bar_x]])
-          ) +
-            geom_bar(fill = "steelblue")
-          
-        } else {
-          
-          ggplot(
-            filtered_data(),
-            aes(
-              x = .data[[input$bar_x]],
-              fill = .data[[input$bar_fill]]
-            )
-          ) +
-            geom_bar(position = "dodge")
-          
-        }
         
-    } else if(input$summary_type == "Boxplot") {
+        ggplot(
+          filtered_data(),
+          aes(x = .data[[input$bar_x]])
+        ) +
+          geom_bar(fill = "steelblue") +
+          labs(
+            title = paste(
+              "Distribution of",
+              var_labels[input$bar_x]
+            ),
+            x = var_labels[input$bar_x],
+            y = "Count"
+          ) +
+          theme_minimal() +
+          theme(
+            axis.text.x = element_text(
+              angle = 45,
+              hjust = 1
+            )
+          )
+        
+      } else {
+        
+        ggplot(
+          filtered_data(),
+          aes(
+            x = .data[[input$bar_x]],
+            fill = .data[[input$bar_fill]]
+          )
+        ) +
+          geom_bar(position = "dodge") +
+          labs(
+            title = paste(
+              var_labels[input$bar_x],
+              "by",
+              var_labels[input$bar_fill]
+            ),
+            x = var_labels[input$bar_x],
+            y = "Count",
+            fill = var_labels[input$bar_fill]
+          ) +
+          theme_minimal() +
+          theme(
+            axis.text.x = element_text(
+              angle = 45,
+              hjust = 1
+            )
+          )
+        
+      }
+        
+    }else if(input$summary_type == "Heatmap") {
+      
+      req(input$heat_x, input$heat_y)
+      
+      filtered_data() |>
+        count(
+          .data[[input$heat_x]],
+          .data[[input$heat_y]]
+        ) |>
+        ggplot(
+          aes(
+            x = .data[[input$heat_x]],
+            y = .data[[input$heat_y]],
+            fill = n
+          )
+        ) +
+        geom_tile() +
+        geom_text(
+          aes(label = n),
+          color = "white"
+        ) +
+        scale_fill_viridis_c() +
+        labs(
+          title = paste(
+            var_labels[input$heat_y],
+            "by",
+            var_labels[input$heat_x]
+          ),
+          x = var_labels[input$heat_x],
+          y = var_labels[input$heat_y],
+          fill = "Count"
+        ) +
+        theme_minimal() +
+        theme(
+          axis.text.x = element_text(
+            angle = 45,
+            hjust = 1
+          )
+        )
+      
+    }  else if(input$summary_type == "Boxplot") {
       
       req(input$num_summary_var)
       
@@ -598,7 +714,18 @@ server <- function(input, output, session) {
             y = .data[[input$num_summary_var]]
           )
         ) +
-          geom_boxplot(fill = "steelblue")
+          geom_boxplot(
+            fill = "steelblue"
+          ) +
+          labs(
+            title = paste(
+              "Distribution of",
+              var_labels[input$num_summary_var]
+            ),
+            x = "",
+            y = var_labels[input$num_summary_var]
+          ) +
+          theme_minimal()
         
       } else {
         
@@ -609,55 +736,116 @@ server <- function(input, output, session) {
             y = .data[[input$num_summary_var]]
           )
         ) +
-          geom_boxplot()
-      
-    }
+          geom_boxplot(
+            fill = "steelblue"
+          ) +
+          labs(
+            title = paste(
+              var_labels[input$num_summary_var],
+              "by",
+              var_labels[input$group_var]
+            ),
+            x = var_labels[input$group_var],
+            y = var_labels[input$num_summary_var]
+          ) +
+          theme_minimal() +
+          theme(
+            axis.text.x = element_text(
+              angle = 45,
+              hjust = 1
+            )
+          )
         
-   }else if(input$summary_type == "Histogram") {
+      }
+      
+    } else if(input$summary_type == "Histogram") {
       
       req(input$num_summary_var)
+      
+      p <- ggplot(
+        filtered_data(),
+        aes(
+          x = .data[[input$num_summary_var]]
+        )
+      ) +
+        geom_histogram(
+          bins = 30,
+          fill = "steelblue",
+          color = "white"
+        ) +
+        labs(
+          title = paste(
+            "Histogram of",
+            var_labels[input$num_summary_var]
+          ),
+          x = var_labels[input$num_summary_var],
+          y = "Count"
+        ) +
+        theme_minimal()
+      
+      if(input$hist_facet != "None") {
+        
+        p <- p +
+          facet_wrap(
+            vars(.data[[input$hist_facet]])
+          )
+        
+      }
+      
+      p
+      
+      
+  } else if(input$summary_type == "Density Plot") {
+    
+    req(input$num_summary_var)
+    
+    if(input$group_var == "None") {
       
       ggplot(
-          filtered_data(),
-          aes(
-            x = .data[[input$num_summary_var]]
-          )
+        filtered_data(),
+        aes(
+          x = .data[[input$num_summary_var]]
+        )
+      ) +
+        geom_density(
+          fill = "steelblue",
+          alpha = 0.3
         ) +
-          geom_histogram(
-            bins = 30,
-            fill = "steelblue"
-          )
-        
-      }
-      
-    else if(input$summary_type == "Density Plot") {
-      
-      req(input$num_summary_var)
-      
-      if(input$group_var == "None") {
-        
-        ggplot(
-          filtered_data(),
-          aes(
-            x = .data[[input$num_summary_var]]
-          )
+        labs(
+          title = paste(
+            "Distribution of",
+            var_labels[input$num_summary_var]
+          ),
+          x = var_labels[input$num_summary_var],
+          y = "Density"
         ) +
-          geom_density(fill = "steelblue", alpha = .3)
-        
-      } else {
-        
-        ggplot(
-          filtered_data(),
-          aes(
-            x = .data[[input$num_summary_var]],
-            fill = .data[[input$group_var]]
-          )
+        theme_minimal()
+      
+    } else {
+      
+      ggplot(
+        filtered_data(),
+        aes(
+          x = .data[[input$num_summary_var]],
+          fill = .data[[input$group_var]]
+        )
+      ) +
+        geom_density(alpha = 0.2) +
+        labs(
+          title = paste(
+            var_labels[input$num_summary_var],
+            "by",
+            var_labels[input$group_var]
+          ),
+          x = var_labels[input$num_summary_var],
+          y = "Density",
+          fill = var_labels[input$group_var]
         ) +
-          geom_density(alpha = .2)
-        
-      }
+        theme_minimal()
       
     }
+    
+  }
     
     else if(input$summary_type == "Scatterplot") {
       
