@@ -151,13 +151,21 @@ ui <- fluidPage(
           
           h2("Student Academic Performance and Dropout Risk"),
           
-          p("This application allows users to explore factors associated with student academic success and dropout risk."),
+          p("This application allows users to explore factors associated with student 
+            academic success and dropout risk. The dataset contains 
+            information on student demographics, academic performance, 
+            study habits, and enrollment outcomes. 
+            The data were obtained from Kaggle and can be used to 
+            investigate characteristics associated with student persistence and 
+            dropout."),
           
-          p("The sidebar allows filtering the data based on demographic and academic characteristics."),
+          p("The sidebar allows users to filter the dataset based on demographic and academic characteristics of interest."),
           
-          p("The Data Download tab displays the filtered dataset and allows downloading the subsetted data."),
+          p("The About tab provides information about the dataset and the purpose of the application. The Data Download tab 
+            allows users to view and download the filtered dataset. The Data Exploration tab provides graphical and numerical 
+            summaries, including histograms, boxplots, scatterplots, heatmaps, frequency tables, and numerical summary tables."),
           
-          p("The Data Exploration tab provides graphical and numerical summaries."),
+          p("Dataset Source: Kaggle Student Academic Performance and Dropout Risk Dataset"),
           
           tags$a(
             href = "https://www.kaggle.com/datasets/mohankrishnathalla/student-academic-performance-and-dropout-risk",
